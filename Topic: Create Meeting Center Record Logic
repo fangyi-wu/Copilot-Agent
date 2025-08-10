@@ -1,0 +1,308 @@
+kind: AdaptiveDialog
+modelDescription: |-
+  This topic can create meeting center record by extracting Salesforce events data.
+  Trigger phases: "Show me my recent 3 events", "Get latest events for client", "Help me create a new Meeting Center record"
+beginDialog:
+  kind: OnRecognizedIntent
+  id: main
+  intent: {}
+  actions:
+    - kind: Question
+      id: question_Zgde7K
+      interruptionPolicy:
+        allowInterruption: true
+
+      variable: init:Topic.ClientName
+      prompt: What's the client name?
+      entity: StringPrebuiltEntity
+
+    - kind: BeginDialog
+      id: rirJPu
+      input:
+        binding:
+          text: =Topic.ClientName
+
+      dialog: crdf5_meetingPrepAgent.action.SearchAccountsForClientName
+      output:
+        binding:
+          ouput: Topic.ouput
+
+    - kind: BeginDialog
+      id: oRZjGe
+      input:
+        binding:
+          text: =Topic.ouput
+          text_1: =Topic.ClientName
+
+      dialog: crdf5_meetingPrepAgent.action.FindTop3MachedClients
+      output:
+        binding:
+          client1_hhid: Topic.client1_hhid
+          client1_name: Topic.client1_name
+          client2_hhid: Topic.client2_hhid
+          client2_name: Topic.client2_name
+          client3_hhid: Topic.client3_hhid
+          client3_name: Topic.client3_name
+
+    - kind: Question
+      id: question_1g5uv5
+      interruptionPolicy:
+        allowInterruption: true
+
+      variable: init:Topic.Var1
+      prompt: |-
+        I found the top 3 potential clients for {Topic.ClientName}.
+
+        **1.  First Client:**
+        - Client Name: {Topic.client1_name}
+        - Client Household ID: {Topic.client1_hhid}
+
+
+        **2.  Second Client:**
+        - Client Name: {Topic.client2_name}
+        - Client Household ID: {Topic.client2_hhid}
+
+        **3.  Third Client:**
+        - Client Name: {Topic.client3_name}
+        - Client Household ID: {Topic.client3_hhid}
+
+
+        Could you please confirm which one you were referring to?
+      entity:
+        kind: EmbeddedEntity
+        definition:
+          kind: ClosedListEntity
+          items:
+            - id: 1
+              displayName: 1
+
+            - id: 2
+              displayName: 2
+
+            - id: 3
+              displayName: 3
+
+    - kind: ConditionGroup
+      id: conditionGroup_dJcWog
+      conditions:
+        - id: conditionItem_341ReD
+          condition: =Topic.Var1 = 'crdf5_meetingPrepAgent.topic.MCRecordbyGet3Events.main.question_1g5uv5'.'1'
+          actions:
+            - kind: BeginDialog
+              id: ZJmZ9p
+              input:
+                binding:
+                  text: =Topic.client1_hhid
+
+              dialog: crdf5_meetingPrepAgent.action.GetRecentEventRecord
+              output:
+                binding:
+                  first: Topic.first
+                  firstevent_actdate: Topic.firstevent_actdate
+                  firstevent_createdate: Topic.firstevent_createdate
+                  firstevent_related: Topic.firstevent_related
+                  firstevent_sub: Topic.firstevent_sub
+                  firstevent_type: Topic.firstevent_type
+                  second: Topic.second
+                  secondevent_actdate: Topic.secondevent_actdate
+                  secondevent_createdate: Topic.secondevent_createdate
+                  secondevent_relatedto: Topic.secondevent_relatedto
+                  secondevent_sub: Topic.secondevent_sub
+                  secondevent_type: Topic.secondevent_type
+                  third: Topic.third
+                  thirdevent_actdate: Topic.thirdevent_actdate
+                  thirdevent_createdate: Topic.thirdevent_createdate
+                  thirdevent_relateto: Topic.thirdevent_relateto
+                  thirdevent_sub: Topic.thirdevent_sub
+                  thirdevent_type: Topic.thirdevent_type
+
+        - id: conditionItem_etbEGc
+          condition: =Topic.Var1 = 'crdf5_meetingPrepAgent.topic.MCRecordbyGet3Events.main.question_1g5uv5'.'2'
+
+        - id: conditionItem_tr4XX4
+          condition: =Topic.Var1 = 'crdf5_meetingPrepAgent.topic.MCRecordbyGet3Events.main.question_1g5uv5'.'3'
+
+    - kind: Question
+      id: question_e9hEPu
+      interruptionPolicy:
+        allowInterruption: true
+
+      variable: init:Topic.Var2
+      prompt: |-
+        I've found these three most recently created events:
+
+        **1.  First Event:**
+        - Subject: {Topic.firstevent_sub}
+        - Activity Date: {Topic.firstevent_actdate}
+        - Client Household ID: {Topic.firstevent_related}
+        - Meeting Type: {Topic.firstevent_type}
+        - Event Created Date: {Topic.firstevent_createdate}
+
+        **2.  Second Event:**
+        - Subject: {Topic.secondevent_sub}
+        - Activity Date: {Topic.secondevent_actdate}
+        - Client Household ID: {Topic.secondevent_relatedto}
+        - Meeting Type: {Topic.secondevent_type}
+        - Event Created Date: {Topic.secondevent_createdate}
+
+        **3.  Third Event:**
+        - Subject: {Topic.thirdevent_sub}
+        - Activity Date: {Topic.thirdevent_actdate}
+        - Client Household ID: {Topic.thirdevent_relateto}
+        - Meeting Type: {Topic.thirdevent_type}
+        - Event Created Date: {Topic.thirdevent_createdate}
+
+        Please let me know which one you want me to work on.
+      entity:
+        kind: EmbeddedEntity
+        definition:
+          kind: ClosedListEntity
+          items:
+            - id: 1
+              displayName: 1
+
+            - id: 2
+              displayName: 2
+
+            - id: 3
+              displayName: 3
+
+    - kind: ConditionGroup
+      id: conditionGroup_KKM6Mp
+      conditions:
+        - id: conditionItem_70E5LO
+          condition: =Topic.Var2 = 'crdf5_meetingPrepAgent.topic.MCRecordbyGet3Events.main.question_e9hEPu'.'1'
+          actions:
+            - kind: Question
+              id: question_LrSbY8
+              interruptionPolicy:
+                allowInterruption: true
+
+              variable: init:Topic.userfeedback
+              prompt: |-
+                Here’s the event information I found. Let me know if anything is wrong or needs to be changed.
+
+                **Event:**
+                - Subject: {Topic.firstevent_sub}
+                - Activity Date: {Topic.firstevent_actdate}
+                - Client Household ID: {Topic.firstevent_related}
+                - Meeting Type: {Topic.firstevent_type}
+                - Event Created Date: {Topic.firstevent_createdate}
+              entity: StringPrebuiltEntity
+
+            - kind: BeginDialog
+              id: xOjPSx
+              input:
+                binding:
+                  Text_20input: =Topic.first
+                  userfeedback: =Topic.userfeedback
+
+              dialog: crdf5_meetingPrepAgent.action.NewUserFB4MeetingNotes
+              output:
+                binding:
+                  text: Topic.finalanswer
+
+            - kind: Question
+              id: question_bUP2vc
+              interruptionPolicy:
+                allowInterruption: true
+
+              variable: init:Topic.status
+              prompt: What's the status for this meeting record? (New, Prep & Meeting, Completed)
+              entity: StringPrebuiltEntity
+
+            - kind: InvokeFlowAction
+              id: invokeFlowAction_cA7lr4
+              input:
+                binding:
+                  text: =Topic.first
+
+              output:
+                binding:
+                  dpclientname: Topic.dpclientname
+                  dpdate: Topic.dpdate
+                  dphhid: Topic.dphhid
+                  dprecordid: Topic.dprecordid
+                  dpstring: Topic.dpstring
+                  dptype: Topic.dptype
+
+              flowId: 8acf85be-19af-4ccb-b245-244b8ea9d8df
+
+            - kind: BeginDialog
+              id: MZlxxt
+              input:
+                binding:
+                  Text_20input: =Topic.dpstring
+
+              dialog: crdf5_meetingPrepAgent.action.duplicate3
+              output:
+                binding:
+                  text: Topic.dpfb
+
+            - kind: Question
+              id: question_cLCVkT
+              interruptionPolicy:
+                allowInterruption: true
+
+              variable: init:Topic.Var3
+              prompt: |-
+                I may have found following duplicate record in Meeting Center:
+
+                {Topic.dpfb}
+
+                Let me know if you still want me to create a new one.
+              entity:
+                kind: EmbeddedEntity
+                definition:
+                  kind: ClosedListEntity
+                  items:
+                    - id: Yes, continue to create a new one.
+                      displayName: Yes, continue to create a new one.
+
+                    - id: No
+                      displayName: No
+
+            - kind: ConditionGroup
+              id: conditionGroup_RZ99Ty
+              conditions:
+                - id: conditionItem_H0lqgg
+                  condition: =Topic.Var3 = 'crdf5_meetingPrepAgent.topic.MCRecordbyGet3Events.main.question_cLCVkT'.'Yes, continue to create a new one.'
+                  actions:
+                    - kind: SendActivity
+                      id: sendActivity_3wrvr3
+                      activity: |-
+                        Now, I will update the meeting details in meeting center and create a new meeting center record for following information :)
+
+                        {Topic.finalanswer} 
+                        Status: {Topic.status}
+
+                    - kind: InvokeFlowAction
+                      id: invokeFlowAction_WFrkNG
+                      input:
+                        binding:
+                          text: =Topic.first
+                          text_1: =Topic.status
+                          text_2: =Topic.client1_name
+
+                      output: {}
+                      flowId: 445527fe-7e93-7759-685d-644193daf96d
+
+                    - kind: SendActivity
+                      id: sendActivity_In5raD
+                      activity: The new meeting center record is created!
+
+                - id: conditionItem_aSLdf6
+                  condition: =Topic.Var3 = 'crdf5_meetingPrepAgent.topic.MCRecordbyGet3Events.main.question_cLCVkT'.No
+                  actions:
+                    - kind: SendActivity
+                      id: sendActivity_HZzh7U
+                      activity: Please go to Salesforce and locate record {Topic.dprecordid} to see the existing record.
+
+        - id: conditionItem_zWriju
+          condition: =Topic.Var2 = 'crdf5_meetingPrepAgent.topic.MCRecordbyGet3Events.main.question_e9hEPu'.'2'
+
+        - id: conditionItem_pWn8HH
+          condition: =Topic.Var2 = 'crdf5_meetingPrepAgent.topic.MCRecordbyGet3Events.main.question_e9hEPu'.'3'
+
+inputType: {}
+outputType: {}
