@@ -1,0 +1,236 @@
+kind: AdaptiveDialog
+modelDescription: |-
+  This topic can update generic note record by extracting client's household id and meeting notes from meeting center.
+  Trigger phases: "Show me the most recent meeting center record", "Help me update a new generic note record", "Help me update a new planning area record for a client", "I want to create generic notes from my mc meeting notes".
+beginDialog:
+  kind: OnRecognizedIntent
+  id: main
+  intent: {}
+  actions:
+    - kind: Question
+      id: question_EOSPnL
+      interruptionPolicy:
+        allowInterruption: true
+
+      variable: init:Topic.ClientName
+      prompt: What's the client name?
+      entity: StringPrebuiltEntity
+
+    - kind: BeginDialog
+      id: 69lo6A
+      input:
+        binding:
+          text: =Topic.ClientName
+
+      dialog: crdf5_meetingPrepAgent.action.SearchAccountsForClientName
+      output:
+        binding:
+          ouput: Topic.ouput
+
+    - kind: BeginDialog
+      id: Hi1QYy
+      input:
+        binding:
+          text: =Topic.ouput
+          text_1: =Topic.ClientName
+
+      dialog: crdf5_meetingPrepAgent.action.FindTop3MachedClients
+      output:
+        binding:
+          client1_hhid: Topic.client1_hhid
+          client1_name: Topic.client1_name
+          client2_hhid: Topic.client2_hhid
+          client2_name: Topic.client2_name
+          client3_hhid: Topic.client3_hhid
+          client3_name: Topic.client3_name
+
+    - kind: Question
+      id: question_LgbVqA
+      interruptionPolicy:
+        allowInterruption: true
+
+      variable: init:Topic.Var1
+      prompt: |-
+        I found the top 3 potential clients for {Topic.ClientName}.
+
+        **1.  First Client:**
+        - Client Name: {Topic.client1_name}
+        - Client Household ID: {Topic.client1_hhid}
+
+
+        **2.  Second Client:**
+        - Client Name: {Topic.client2_name}
+        - Client Household ID: {Topic.client2_hhid}
+
+        **3.  Third Client:**
+        - Client Name: {Topic.client3_name}
+        - Client Household ID: {Topic.client3_hhid}
+
+
+        Could you please confirm which one you were referring to?
+      entity:
+        kind: EmbeddedEntity
+        definition:
+          kind: ClosedListEntity
+          items:
+            - id: 1
+              displayName: 1
+
+            - id: 2
+              displayName: 2
+
+            - id: 3
+              displayName: 3
+
+    - kind: ConditionGroup
+      id: conditionGroup_ZLMbfc
+      conditions:
+        - id: conditionItem_m4KLu5
+          condition: =Topic.Var1 = 'crdf5_meetingPrepAgent.topic.GenericNoteUpdateGet3MCRecord.main.question_LgbVqA'.'1'
+          actions:
+            - kind: SendActivity
+              id: sendActivity_vWFlUt
+              activity: Thanks! Now, I will try to get the most recent meeting center record with meeting notes for {Topic.client1_name}.
+
+            - kind: BeginDialog
+              id: MkhsUl
+              input:
+                binding:
+                  text: =Topic.client1_hhid
+
+              dialog: crdf5_meetingPrepAgent.action.GetRecentMCRecord
+              output:
+                binding:
+                  1_clientname: Topic._1_clientname
+                  1_meetdate: Topic._1_meetdate
+                  1_meetnotes: Topic._1_meetnotes
+                  1_recordid: Topic._1_recordid
+                  2_clientname: Topic._2_clientname
+                  2_meetdate: Topic._2_meetdate
+                  2_meetnotes: Topic._2_meetnotes
+                  2_recordid: Topic._2_recordid
+                  3_clientname: Topic._3_clientname
+                  3_meetdate: Topic._3_meetdate
+                  3_meetnotes: Topic._3_meetnotes
+                  3_recordid: Topic._3_recordid
+
+            - kind: Question
+              id: question_NvAKrQ
+              interruptionPolicy:
+                allowInterruption: true
+
+              variable: init:Topic.Var2
+              prompt: |-
+                I've found these three most recently created meeting center records for {Topic.client1_name}:
+
+                **1.  First Record:**
+                - Client Name: {Topic._1_clientname}
+                - Meeting Center Record ID: {Topic._1_recordid}
+                - Meeting Date: {Topic._1_meetdate}
+                - Meeting Notes: {Topic._1_meetnotes}
+
+
+                **2.  Second Event:**
+                - Client Name: {Topic._2_clientname}
+                - Meeting Center Record ID: {Topic._2_recordid}
+                - Meeting Date: {Topic._2_meetdate}
+                - Meeting Notes: {Topic._2_meetnotes}
+
+                **3.  Third Event:**
+                - Client Name: {Topic._3_clientname}
+                - Meeting Center Record ID: {Topic._3_recordid}
+                - Meeting Date: {Topic._3_meetdate}
+                - Meeting Notes: {Topic._3_meetnotes}
+
+                Please let me know which one you want me to work on.
+              entity:
+                kind: EmbeddedEntity
+                definition:
+                  kind: ClosedListEntity
+                  items:
+                    - id: 1
+                      displayName: 1
+
+                    - id: 2
+                      displayName: 2
+
+                    - id: 3
+                      displayName: 3
+
+            - kind: ConditionGroup
+              id: conditionGroup_sFPl6u
+              conditions:
+                - id: conditionItem_tesWCA
+                  condition: =Topic.Var2 = 'crdf5_meetingPrepAgent.topic.GenericNoteUpdateGet3MCRecord.main.question_NvAKrQ'.'1'
+                  actions:
+                    - kind: BeginDialog
+                      id: cuoEJx
+                      input:
+                        binding:
+                          Text_20input: =Topic._1_meetnotes
+
+                      dialog: crdf5_meetingPrepAgent.action.extractplanningareaandnotesfromMCnotes
+                      output:
+                        binding:
+                          text: Topic.ori
+
+                    - kind: Question
+                      id: question_P3bmav
+                      interruptionPolicy:
+                        allowInterruption: true
+
+                      variable: init:Topic.userfeedback
+                      prompt: |-
+                        Here are the planning areas and notes extracted from meeting center ({Topic._1_recordid}) of client {Topic._1_clientname}.
+
+                        {Topic.ori}
+
+                        Please let me know if you would like to make any changes or updates.
+                        Be as specific as possible — for example, “Change the first bullet point under Retirement Planning…”
+                        If everything looks good, just reply with something like “No changes” or “Looks good.”
+                      entity: StringPrebuiltEntity
+
+                    - kind: BeginDialog
+                      id: 1B5I5r
+                      input:
+                        binding:
+                          Text_20input: =Topic.ori
+                          user_20feedback: =Topic.userfeedback
+
+                      dialog: crdf5_meetingPrepAgent.action.extractoriginalnote
+                      output:
+                        binding:
+                          text: Topic.text
+
+                    - kind: SendActivity
+                      id: sendActivity_vuB3n4
+                      activity: I've made modification regarding to {Topic.text}. Let's update these notes to the Generic Notes.
+
+                    - kind: BeginDialog
+                      id: HgJduY
+                      input:
+                        binding:
+                          text: =Topic.client1_hhid
+                          text_1: =Topic.text
+
+                      dialog: crdf5_meetingPrepAgent.action.CreateGenericNotes
+                      output: {}
+
+                    - kind: SendActivity
+                      id: sendActivity_RaX9ud
+                      activity: I've updated successfully. Please check the Generic Notes in Salesforce. Let me know if you need additional help :)
+
+                - id: conditionItem_K8Kz2I
+                  condition: =Topic.Var2 = 'crdf5_meetingPrepAgent.topic.GenericNoteUpdateGet3MCRecord.main.question_NvAKrQ'.'2'
+
+                - id: conditionItem_oR3S1x
+                  condition: =Topic.Var2 = 'crdf5_meetingPrepAgent.topic.GenericNoteUpdateGet3MCRecord.main.question_NvAKrQ'.'3'
+
+        - id: conditionItem_YWwgXq
+          condition: =Topic.Var1 = 'crdf5_meetingPrepAgent.topic.GenericNoteUpdateGet3MCRecord.main.question_LgbVqA'.'2'
+
+        - id: conditionItem_6h24hL
+          condition: =Topic.Var1 = 'crdf5_meetingPrepAgent.topic.GenericNoteUpdateGet3MCRecord.main.question_LgbVqA'.'3'
+
+inputType: {}
+outputType: {}
